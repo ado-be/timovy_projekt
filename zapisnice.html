@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Systém na realizáciu prijímačok z matematiky</title>
+
+
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header class="site-header">
+    <div class="container nav">
+        <a class="logo" href="index.html" aria-label="Domov">
+        </a>
+        <nav aria-label="Hlavná navigácia">
+            <ul>
+
+                <li><a href="zapisnice.html">Zápisnice</a></li>
+                <li><a href="tim.html">Tím</a></li>
+
+            </ul>
+        </nav>
+    </div>
+</header>
+
+
+
+<section class="minutes">
+    <h1>Zápisnice</h1>
+
+
+
+    <table class="minutes-table">
+        <thead>
+        <tr><th>Dátum</th><th>Názov</th><th>Autor</th><th>Zverejnené</th><th>Ďalšie stretnutie</th></tr>
+        </thead>
+        <tbody id="minutesBody"></tbody>
+    </table>
+</section>
+</body>
+<script>
+    (async function(){
+        const res = await fetch('zapisnice/list.json', {cache: 'no-store'});
+        const data = (await res.json()).sort((a,b)=> new Date(b.date)-new Date(a.date));
+
+        const fmt = d => new Date(d).toLocaleDateString('sk-SK', {year:'numeric', month:'2-digit', day:'2-digit'});
+        const ok = (published, next) => {
+            const p = new Date(published), n = new Date(next);
+            const msInDay = 86400000;
+            return (n - p) >= msInDay;
+        };
+
+        const tbody = document.getElementById('minutesBody');
+        tbody.innerHTML = data.map(x => {
+            const compliant = ok(x.published, x.nextMeeting);
+            return `
+      <tr>
+        <td>${fmt(x.date)}</td>
+        <td><a href="zapisnice/${x.file}">${x.title}</a></td>
+        <td>${x.author}</td>
+        <td>${fmt(x.published)}</td>
+        <td>${fmt(x.nextMeeting)}</td>
+        <td>
+
+        </td>
+      </tr>`;
+        }).join('');
+
+        // filter
+
+    })();
+</script>
+
+</html>
