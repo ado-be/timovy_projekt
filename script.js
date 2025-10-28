@@ -10,7 +10,7 @@
         if (!res.ok) throw new Error('list.json not found');
         const items = await res.json();
 
-        // Zoradiť podľa dátumu stretnutia (najnovšie hore)
+        ///sort dates
         items.sort((a,b)=> new Date(b.date) - new Date(a.date));
 
         // Vyplniť „Výsledné zápisnice“

@@ -6,13 +6,22 @@
     "file": "2025-09-29.html",
     "author": "Adrián Lapos",
     "published": "2025-09-30",
-    "nextMeeting": "2025-10-06"
+    "nextMeeting": "2025-10-10"
   },
 
   {
-    "date": "2025-09-29",
+    "date": "2025-10-10",
     "title": "Stretnutie #2",
-    "file": "2025-09-29.html",
+    "file": "2025-10-10.html",
+    "author": "Adrián Benedik",
+    "published": "2025-10-24",
+    "nextMeeting": "2025-11-07"
+  },
+
+  {
+    "date": "2025-10-24",
+    "title": "Stretnutie #3",
+    "file": "2025-10-24.html",
     "author": "Adrián Benedik",
     "published": "2025-10-24",
     "nextMeeting": "2025-11-07"

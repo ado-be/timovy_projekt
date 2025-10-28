@@ -3,73 +3,130 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Systém na realizáciu prijímačok z matematiky</title>
-
-
+    <title>Systém na realizáciu prijímačok z matematiky — Zápisnice</title>
     <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+
 <header class="site-header">
     <div class="container nav">
-        <a class="logo" href="index.html" aria-label="Domov">
-        </a>
+        <a class="logo" href="index.html" aria-label="Domov"></a>
         <nav aria-label="Hlavná navigácia">
             <ul>
-
-                <li><a href="zapisnice.html">Zápisnice</a></li>
+                <li><a href="zapisnice.html" aria-current="page">Zápisnice</a></li>
                 <li><a href="tim.html">Tím</a></li>
-
             </ul>
         </nav>
     </div>
 </header>
 
 
+<main class="container">
+    <section class="minutes">
+        <h1>Zápisnice</h1>
 
-<section class="minutes">
-    <h1>Zápisnice</h1>
 
 
+        <div class="filters" aria-label="Filtre">
+            <input id="q" type="search" placeholder="Hľadať podľa názvu alebo autora…" autocomplete="off"
+                   style="padding:10px 12px;border:1px solid color-mix(in oklab, var(--text), transparent 85%);border-radius:10px;max-width:380px;width:100%;">
+            <span id="count" class="badge" style="margin-left:8px;">Načítavam…</span>
+        </div>
 
-    <table class="minutes-table">
-        <thead>
-        <tr><th>Dátum</th><th>Názov</th><th>Autor</th><th>Zverejnené</th><th>Ďalšie stretnutie</th></tr>
-        </thead>
-        <tbody id="minutesBody"></tbody>
-    </table>
-</section>
-</body>
+        <div class="card minutes-card">
+            <table class="minutes-table" aria-describedby="table-desc">
+                <caption id="table-desc" class="sr-only">Tabuľka zápisníc s možnosťou vyhľadávať.</caption>
+                <thead>
+                <tr>
+                    <th>Dátum</th>
+                    <th>Názov</th>
+                    <th>Autor</th>
+                    <th>Zverejnené</th>
+                    <th>Ďalšie stretnutie</th>
+                    <th>Status</th>
+                </tr>
+                </thead>
+                <tbody id="minutesBody">
+                <tr><td colspan="6" style="text-align:center;color:var(--muted);padding:18px;">Načítavam dáta…</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+
 <script>
     (async function(){
-        const res = await fetch('zapisnice/list.json', {cache: 'no-store'});
-        const data = (await res.json()).sort((a,b)=> new Date(b.date)-new Date(a.date));
-
-        const fmt = d => new Date(d).toLocaleDateString('sk-SK', {year:'numeric', month:'2-digit', day:'2-digit'});
+        const fmt = d => {
+            const dt = new Date(d);
+            return Number.isNaN(dt) ? "" :
+                dt.toLocaleDateString('sk-SK', { year:'numeric', month:'2-digit', day:'2-digit' });
+        };
         const ok = (published, next) => {
-            const p = new Date(published), n = new Date(next);
-            const msInDay = 86400000;
-            return (n - p) >= msInDay;
+            const p = new Date(published).getTime();
+            const n = new Date(next).getTime();
+            if (Number.isNaN(p) || Number.isNaN(n)) return false;
+            return (n - p) >= 86_400_000; // >= 1 deň
         };
 
+        let all = [];
         const tbody = document.getElementById('minutesBody');
-        tbody.innerHTML = data.map(x => {
-            const compliant = ok(x.published, x.nextMeeting);
-            return `
-      <tr>
-        <td>${fmt(x.date)}</td>
-        <td><a href="zapisnice/${x.file}">${x.title}</a></td>
-        <td>${x.author}</td>
-        <td>${fmt(x.published)}</td>
-        <td>${fmt(x.nextMeeting)}</td>
-        <td>
+        const q = document.getElementById('q');
+        const count = document.getElementById('count');
 
-        </td>
-      </tr>`;
-        }).join('');
+        try {
+            const res = await fetch('zapisnice/list.json', { cache: 'no-store' });
+            all = await res.json();
 
-        // filter
 
+            all.sort((a,b) => new Date(b.date) - new Date(a.date));
+        } catch (e) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:18px;">
+            Nepodarilo sa načítať <code>zapisnice/list.json</code>.
+        </td></tr>`;
+            count.textContent = 'Chyba načítania';
+            return;
+        }
+
+        function render(filter = '') {
+            const f = filter.trim().toLowerCase();
+            const rows = all.filter(x => {
+                if (!f) return true;
+                return (`${x.title ?? ''} ${x.author ?? ''}`.toLowerCase()).includes(f);
+            });
+
+            if (rows.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:18px;">
+              Žiadne zápisnice pre zadané filtre.
+          </td></tr>`;
+                count.textContent = '0 položiek';
+                return;
+            }
+
+            tbody.innerHTML = rows.map(x => {
+                const good = ok(x.published, x.nextMeeting);
+                const badge = good
+                    ? `<span class="badge ok">OK</span>`
+                    : `<span class="badge late">Neskoro</span>`;
+                return `
+            <tr>
+              <td>${fmt(x.date)}</td>
+              <td><a class="min-link" href="zapisnice/${x.file}">${x.title}</a></td>
+              <td>${x.author ?? ''}</td>
+              <td>${fmt(x.published)}</td>
+              <td>${fmt(x.nextMeeting)}</td>
+              <td>${badge}</td>
+            </tr>`;
+            }).join('');
+
+            count.textContent = `${rows.length} položiek`;
+        }
+
+        // prvé vykreslenie
+        render();
+
+        // filter input
+        q.addEventListener('input', (e) => render(e.target.value));
     })();
 </script>
-
+</body>
 </html>
